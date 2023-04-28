@@ -163,8 +163,13 @@ class Ball(KinematicBody):
 
         self._velocities.X = data_ball.vx
         self._velocities.Y = data_ball.vy
-
-
+        
+    def getBallData(self):
+        pos = [self.get_coordinates().X, self.get_coordinates().Y]
+        vel = [self.get_velocities().X, self.get_velocities().Y]
+        data = f'{pos[0]},{pos[1]},{vel[0]},{vel[1]}'
+        return data           
+            
 class Robot(KinematicBody):
     """Input: Robot data.
     Description: Stores data about robots in the game.
@@ -199,6 +204,7 @@ class Robot(KinematicBody):
         self._friends = []
         self.pastPose = zeros(12).reshape(4,
                                           3)
+        self.velocities_to_send = [0.0, 0.0] # ? Stores the velocities to be sent to the simulator
 
     def arrive(self):
         """Input: None.
@@ -227,12 +233,14 @@ class Robot(KinematicBody):
         else:
             self.vL = -v - 0.5 * self.L * w
             self.vR = -v + 0.5 * self.L * w
+        self.velocities_to_send = [self.vL, self.vR]
         self.actuator.send(self.index, self.vL, self.vR)
 
     def sim_set_vel2(self, v1, v2):
         """Input: Wheels velocity data.
         Description: Sends velocity data to simulator to move the robots.
         Output: None."""
+        self.velocities_to_send = [v1, v2]
         self.actuator.send(self.index, v1, v2)
 
     def set_friends(self, friends):
@@ -253,3 +261,14 @@ class Robot(KinematicBody):
 
     def get_target(self) -> Target:
         return self.target
+    
+    def getRobotData(self):
+        pos = [self.get_coordinates().X, self.get_coordinates().Y, self.get_coordinates().rotation]
+        vel = [self.get_velocities().X, self.get_velocities().Y, self.get_velocities().linear, self.get_velocities().angular]
+        data = f'{pos[0]},{pos[1]},{pos[2]},{vel[0]},{vel[1]},{vel[2]},{vel[3]}'
+        return data
+    
+    def getVelocitiesThatWillBeSent(self):
+        data = f'{self.velocities_to_send[0]},{self.velocities_to_send[1]}'
+        return data
+            

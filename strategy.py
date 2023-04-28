@@ -1,5 +1,10 @@
 import action, penalty_handler
+# import tensorflow as tf
+import pandas as pd
+import numpy as np
+from simClasses import *
 from numpy import *
+import csv
 
 
 class Strategy:
@@ -7,14 +12,14 @@ class Strategy:
     Description: This class contains all functions and objects related to selecting a game strategy.
     Output: None"""
 
-    def __init__(self, robots, enemy_robots, ball, mray, strategies):
+    def __init__(self, robots: list, enemy_robots, ball, mray, strategies):
 
         self.robots = robots
         self.enemy_robots = enemy_robots
         self.ball = ball
         self.mray = mray
         self.score = [0, 0]  # Current score, [our score, enemy score]
-        self.penalty_state = 0  # 0 = no peanlty, 1 = offensive penalty, 2 = defensive penalty
+        self.penalty_state = 0  # 0 = no penalty, 1 = offensive penalty, 2 = defensive penalty
         self.strategy = strategies[0]
         self.penaltyStrategies = strategies[1:3]
         self.aop = strategies[3]
@@ -134,7 +139,7 @@ class Strategy:
             else:
                 self.basic_stg_att()
         else:
-            if ball_coordinates.x > 85:
+            if ball_coordinates.X > 85:
                 self.basic_stg_att()
             else:
                 self.basic_stg_def_2()
@@ -292,3 +297,60 @@ class Strategy:
         Description: Calls leader and follower technique for use in strategies.
         Output: None."""
         action.follow_leader(self.robots[1], self.robots[2], self.ball, self)
+        
+    def returnAllDataForCsv(self):
+        ally_data = ''
+        velocities_data = ''
+        for robot in self.robots:
+            robot_data = robot.getRobotData()
+            velocities_data += f'{robot.getVelocitiesThatWillBeSent()},'
+            ally_data += f'{robot_data},'
+        
+        enemy_data = ''
+        for robot in self.enemy_robots:
+            robot_data = robot.getRobotData()
+            enemy_data += f'{robot_data},'
+        
+        ball_data = self.ball.getBallData() 
+        
+        score_data = f'{self.score[0]},{self.score[1]}'        
+        
+        data = f'{ally_data}{enemy_data}{ball_data},{score_data},{velocities_data}'
+        return data   
+    
+    def returnDataForNeuralNetwork(self):
+        ally_data = ''
+        for robot in self.robots:
+            robot_data = robot.getRobotData()
+            ally_data += f'{robot_data},'
+        
+        enemy_data = ''
+        for robot in self.enemy_robots:
+            robot_data = robot.getRobotData()
+            enemy_data += f'{robot_data},'
+        
+        ball_data = self.ball.getBallData() 
+        
+        score_data = f'{self.score[0]},{self.score[1]}'        
+        
+        data = f'{ally_data}{enemy_data}{ball_data},{score_data}'
+        return data  
+    
+    def neural_network(self):
+        """Input: None
+        Description: Calls neural network to make decisions.
+        Output: None."""
+        mean = [-0.06179888143484225, 0.010136696574631666, -0.38579192471469614, -0.06179888143484225, -0.7734128679541099, 0.08097272993549304, 0.10488879249803876, 0.08432841360798499, -0.019608863157247126, 0.10488879249803876, 0.08432841360798499, -0.400691810605911, -0.08364225647069548, 0.03906808052628489, 0.028866983829118065, 0.04284307076337425, 0.03906808052628489, 0.028866983829118065, -0.4324330949072138, -0.005842057745828229, 0.3468274293832633, 0.08537592330309501, -0.015314957918580395, 0.3468274293832633, 0.08537592330309501, -0.7467306524105318, -0.12576130149477707, 0.13117405210401545, 0.1206273634033153, 0.017555109613756125, 0.13117405210401545, 0.1206273634033153, -0.44240286100173415, 0.3537615438081982, 0.06782295222068602, -0.0562414412565873, 0.009190221099779333, 0.06782295222068602, -0.0562414412565873, -0.5333604719006125, 0.22272802053787122, -0.04781915880389854, 0.08103704179789832, -1.0, -0.05133544059177591, -1.0, 0.24214718192530837]
+
+        std = [0.4768021365114932, 0.5325654916660223, 0.19784516259240584, 0.4768021365114932, 0.35889949790584996, 0.10899934685802952, 0.47331552078599304, 0.5051253812209835, 0.5794504752745142, 0.47331552078599304, 0.5051253812209835, 0.5906683211148047, 0.0879073721227085, 0.5031942049676215, 0.5914915214784588, 0.5573888768297759, 0.5031942049676215, 0.5914915214784588, 0.5707736983501842, 0.10435874625692325, 0.24163188695315063, 0.5701776657364512, 0.47249530269077306, 0.24163188695315063, 0.5701776657364512, 0.38795331240978764, 0.16151255926924504, 0.5083544190083, 0.5603343281376371, 0.5295330218652837, 0.5083544190083, 0.5603343281376371, 0.5721515976818207, 0.1176132692845904, 0.48458427786604646, 0.47052321660723134, 0.5528803170200497, 0.48458427786604646, 0.47052321660723134, 0.5096011077802807, 0.09714842460990042, 0.24312973058723855, 0.6300289325407343, 0.0, 0.1953569857360199, 0.0, 0.8819987123267231]
+
+        
+        # normalize data to mean and std above, then predict velocities
+        model = tf.keras.models.load_model('model.h5')
+        # X_test = np.array([self.returnDataForNeuralNetwork().split(',')])
+        # X_test = (X_test - mean) / std
+        
+        # velocities = model.predict(X_test)
+        # print(velocities)
+        # for i in range(3):
+        #     self.robots[i].sim_set_vel2(self.robots[i].index, velocities[i], velocities[i+1])
